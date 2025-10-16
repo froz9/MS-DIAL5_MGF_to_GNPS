@@ -15,7 +15,10 @@ st.set_page_config(
 st.title("Metabolomics MGF File Processor")
 st.write(
     "Effortlessly reformat your MGF output files from MS-DIAL 5 to ensure full compatibility with GNPS and SIRIUS." 
-    "This tool cleans and standardizes your data, preparing it for advanced analysis. Simply upload your file to get started. "
+    
+    "This tool cleans and standardizes your data, preparing it for advanced analysis."
+    
+    "Upload your file to get started. "
     )
 
 
@@ -83,3 +86,4 @@ with col2:
     # Add your logo to the middle column.
     # ⚠️ Make sure 'my_logo.png' is the correct name of your file.
     st.image("logo_L125.png")
+
