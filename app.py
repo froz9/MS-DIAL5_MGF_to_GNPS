@@ -7,17 +7,21 @@ from mgf_processor import parse_mgf_to_dataframe, filter_dataframe, generate_out
 
 # --- 1. SET UP THE PAGE ---
 st.set_page_config(
-    page_title="MGF File Processor",
+    page_title="MS-DIAL 5 MGF Formatter for GNPS & SIRIUS",
     page_icon="🧪",
     layout="centered"
 )
 
 st.title("Metabolomics MGF File Processor")
 st.write(
-    "This tool cleans and reformats MGF files for use with SIRIUS and GNPS. "
-    "Upload your file to begin."
-)
+    "Effortlessly reformat your MGF output files from MS-DIAL 5 to ensure full compatibility with GNPS and SIRIUS." 
+    "This tool cleans and standardizes your data, preparing it for advanced analysis. Simply upload your file to get started. "
+    )
 
+
+st.write(
+    "Upload your file to begin."
+    )
 # --- 2. FILE UPLOADER ---
 # Create the widget that allows users to upload a file
 uploaded_file = st.file_uploader(
@@ -69,3 +73,13 @@ if uploaded_file is not None:
                         file_name="MGF_FINAL_GNPS.mgf",
                         mime="text/plain"
                     )
+
+
+# LAB LOGO --- 🎨
+# Create three columns with a ratio that centers the middle one
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    # Add your logo to the middle column.
+    # ⚠️ Make sure 'my_logo.png' is the correct name of your file.
+    st.image("logo_L125.png")
