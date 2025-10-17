@@ -1,7 +1,4 @@
-# For R and its libraries
 r-base
 r-cran-dplyr
 r-cran-readr
-
-# For the system dependency issue
 unixodbc-dev
