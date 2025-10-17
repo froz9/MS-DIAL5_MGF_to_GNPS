@@ -159,11 +159,6 @@ def generate_output_files(df_data):
 
     }
 
-# mgf_processor.py
-
-# ... (keep all your existing functions) ...
-
-# --- NEW FUNCTION: Replaces the R script ---
 def process_area_file_python(uploaded_file):
     """
     Replicates the R script's logic to process an MS-DIAL Area/Height file using pandas.
@@ -192,13 +187,11 @@ def process_area_file_python(uploaded_file):
         cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
         df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
         
-        # 5. Assign the new headers to the correct row (now at index 3)
+        # 5. Assign the new headers to the correct row (now at index 3) and promote them
         df_modified.iloc[3] = gnps_cols
-
-        # 6. Remove features without an MS2 scan (where 'MS/MS included' is 'null')
-        # The 'MS/MS included' column is at index 21 before more drops, but it's safer to find it by name
-        # After column drops, the headers are now in row 3. Let's make them the actual headers.
         df_modified.columns = df_modified.iloc[3]
+        
+        # 6. Remove features without an MS2 scan
         df_final = df_modified[df_modified["MS/MS included"] != "null"].copy()
         
         # Convert the final DataFrame to a tab-separated string for download
