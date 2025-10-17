@@ -162,20 +162,20 @@ def generate_output_files(df_data):
 # --- For process_area_file ---
 def process_area_file_python(uploaded_file):
     """
-    Now returns a detailed error if something goes wrong.
+    Processes an MS-DIAL Area/Height file. This version is robust to variations
+    in the number of columns in the input file.
     """
     try:
-        # Read the file without headers
         df = pd.read_csv(uploaded_file, sep='\t', header=None)
 
-        # 1. Identify and remove 'Average' and 'Stdev' columns based on row 4 (index 3)
+        # 1. Remove 'Average' and 'Stdev' columns
         cols_to_remove = df.iloc[3][df.iloc[3].isin(["Average", "Stdev"])].index
         df_modified = df.drop(columns=cols_to_remove)
 
-        # 2. Remove the original header row (now at index 3)
+        # 2. Remove the original header row
         df_modified = df_modified.drop(index=3).reset_index(drop=True)
 
-        # 3. Define the new GNPS headers
+        # 3. Define the new GNPS headers (21 total)
         gnps_cols = ["Alignment ID", "Average Rt(min)", "Average Mz", "Metabolite name",
                      "Adduct ion name", "Post curation result", "Fill %", "MS/MS included",
                      "Formula", "Ontology", "INCHIKEY", "SMILES",
@@ -183,25 +183,24 @@ def process_area_file_python(uploaded_file):
                      "Reverse dot product", "Fragment presence %", "S/N average", "Spectrum reference file name",
                      "MS1 isotopic spectrum"]
 
-        # 4. Remove other unnecessary columns by their integer position
-        cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
-        df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
-        
-        # 5. Assign the new headers to the correct row (now at index 3) and promote them
-        df_modified.iloc[3] = gnps_cols
-        df_modified.columns = df_modified.iloc[3]
-        
+        # 4. **THE FIX**: Instead of dropping columns, we now SELECT the first 21 columns.
+        # This ensures the DataFrame has the correct shape for the headers.
+        num_headers = len(gnps_cols)
+        df_final = df_modified.iloc[:, :num_headers].copy()
+
+        # 5. Assign the new headers to the correct row and promote them
+        df_final.iloc[3] = gnps_cols
+        df_final.columns = df_final.iloc[3]
+
         # 6. Remove features without an MS2 scan
-        df_final = df_modified[df_modified["MS/MS included"] != "null"].copy()
-        
-        # Convert the final DataFrame to a tab-separated string for download
+        df_final = df_final[df_final["MS/MS included"] != "null"].copy()
+
+        # Convert to a tab-separated string for download
         output_string = df_final.to_csv(sep='\t', header=False, index=False)
         
-        # On success, return a tuple: (True, and the data)
         return (True, output_string)
 
     except Exception as e:
-        # On failure, return a tuple: (False, and the specific error message)
         error_message = f"Processing failed. The file structure may be different than expected. **Specific error: {e}**"
-        print(error_message) # This prints to the server log
+        print(error_message)
         return (False, error_message)
