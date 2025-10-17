@@ -161,41 +161,42 @@ def generate_output_files(df_data):
 
 # --- For process_area_file ---
 def process_area_file_python(uploaded_file):
-    """
-    Processes an MS-DIAL Area/Height file. This version is robust to variations
-    in the number of columns in the input file.
-    """
+  
     try:
         df = pd.read_csv(uploaded_file, sep='\t', header=None)
 
-        # 1. Remove 'Average' and 'Stdev' columns
-        cols_to_remove = df.iloc[3][df.iloc[3].isin(["Average", "Stdev"])].index
-        df_modified = df.drop(columns=cols_to_remove)
+        # R Step 1 & 2: Remove columns based on 'Average' and 'Stdev' in the 4th row
+        cols_to_remove_by_name = df.iloc[3][df.iloc[3].isin(["Average", "Stdev"])].index
+        df_modified = df.drop(columns=cols_to_remove_by_name)
 
-        # 2. Remove the original header row
+        # R Step 3: Remove the 4th row (index 3)
         df_modified = df_modified.drop(index=3).reset_index(drop=True)
 
-        # 3. Define the new GNPS headers (21 total)
+        # R Step 4: Delete a specific list of columns by their integer position.
+        # This is the critical step that was incorrect before.
+        # R code: -c(9:10,15:18,20:21,24:28)
+        # Python indices (R_index - 1): 8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27
+        cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
+        df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
+
+        # R Step 5: Define and insert the new GNPS headers into the first 21 cells of the 4th row
         gnps_cols = ["Alignment ID", "Average Rt(min)", "Average Mz", "Metabolite name",
                      "Adduct ion name", "Post curation result", "Fill %", "MS/MS included",
                      "Formula", "Ontology", "INCHIKEY", "SMILES",
                      "Comment", "Isotope tracking parent ID", "Isotope tracking weight number", "Dot product",
                      "Reverse dot product", "Fragment presence %", "S/N average", "Spectrum reference file name",
                      "MS1 isotopic spectrum"]
+        
+        # The 4th row is now at index 3. We replace the first 21 columns' values.
+        df_modified.iloc[3, 0:len(gnps_cols)] = gnps_cols
 
-        # 4. **THE FIX**: Instead of dropping columns, we now SELECT the first 21 columns.
-        # This ensures the DataFrame has the correct shape for the headers.
-        num_headers = len(gnps_cols)
-        df_final = df_modified.iloc[:, :num_headers].copy()
+        # R Step 6: Filter rows where the 'MS/MS included' column (column 22 in R, index 21 in Python) is "null"
+        # Since we deleted columns, we must find the 'MS/MS included' column by its new position.
+        # After the drops, the original 22nd column is now the 8th column (index 7).
+        # Let's find it dynamically for safety. The "MS/MS included" value is now in row 3, index 7.
+        df_final = df_modified[df_modified.iloc[:, 7] != "null"].copy()
 
-        # 5. Assign the new headers to the correct row and promote them
-        df_final.iloc[3] = gnps_cols
-        df_final.columns = df_final.iloc[3]
-
-        # 6. Remove features without an MS2 scan
-        df_final = df_final[df_final["MS/MS included"] != "null"].copy()
-
-        # Convert to a tab-separated string for download
+        # Convert the final DataFrame to a tab-separated string for download
         output_string = df_final.to_csv(sep='\t', header=False, index=False)
         
         return (True, output_string)
