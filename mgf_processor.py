@@ -159,9 +159,10 @@ def generate_output_files(df_data):
 
     }
 
+# --- For process_area_file ---
 def process_area_file_python(uploaded_file):
     """
-    Replicates the R script's logic to process an MS-DIAL Area/Height file using pandas.
+    Now returns a detailed error if something goes wrong.
     """
     try:
         # Read the file without headers
@@ -183,7 +184,6 @@ def process_area_file_python(uploaded_file):
                      "MS1 isotopic spectrum"]
 
         # 4. Remove other unnecessary columns by their integer position
-        # R is 1-based, Python is 0-based. The indices are adjusted.
         cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
         df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
         
@@ -196,8 +196,12 @@ def process_area_file_python(uploaded_file):
         
         # Convert the final DataFrame to a tab-separated string for download
         output_string = df_final.to_csv(sep='\t', header=False, index=False)
-        return output_string
+        
+        # On success, return a tuple: (True, and the data)
+        return (True, output_string)
 
     except Exception as e:
-        print(f"Error processing area file with Python: {e}")
-        return None
+        # On failure, return a tuple: (False, and the specific error message)
+        error_message = f"Processing failed. The file structure may be different than expected. **Specific error: {e}**"
+        print(error_message) # This prints to the server log
+        return (False, error_message)

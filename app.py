@@ -50,26 +50,29 @@ with tab1:
                     with dl_col2:
                         st.download_button("Download for GNPS (.mgf)", output_files["MGF_FINAL_GNPS.mgf"], "MGF_FINAL_GNPS.mgf")
 
-# --- TAB 2: AREA FILE FORMATTER (USING PYTHON) ---
+# --- TAB 2: AREA FILE FORMATTER (WITH BETTER ERROR HANDLING) ---
 with tab2:
     st.header("MS-DIAL Area/Height File Formatter")
     st.write("Reformats Area or Height text files from MS-DIAL for use in GNPS.")
     txt_uploaded_file = st.file_uploader(
         "Choose an Area or Height .txt file",
         type=['txt'],
-        key="txt_uploader"  # <-- Key 2 (must be different)
+        key="txt_uploader"
     )
 
     if txt_uploaded_file:
         with st.spinner("Processing your text file..."):
-            processed_data = process_area_file_python(txt_uploaded_file)
-            if processed_data:
+            # The function now returns a success status and the result (data or error message)
+            success, result = process_area_file_python(txt_uploaded_file)
+            
+            if success:
                 st.success("✅ File formatting complete!")
                 st.download_button(
                     label="Download Formatted File (.txt)",
-                    data=processed_data,
+                    data=result, # result is the processed data string
                     file_name="Area_gnps.txt",
                     mime="text/plain"
                 )
             else:
-                st.error("An error occurred while processing the file. Please check the file format.")
+                # If it failed, result is the specific error message
+                st.error(result)
