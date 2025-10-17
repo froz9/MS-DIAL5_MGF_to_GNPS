@@ -1,6 +1,0 @@
-r-base
-r-cran-dplyr
-r-cran-readr
-unixodbc-dev
-libodbc2
-libodbcinst2
