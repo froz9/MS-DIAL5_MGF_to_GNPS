@@ -159,7 +159,11 @@ def generate_output_files(df_data):
 
     }
 
-# --- NEW FUNCTION: ---
+# mgf_processor.py
+
+# ... (keep all your existing functions) ...
+
+# --- NEW FUNCTION: Replaces the R script ---
 def process_area_file_python(uploaded_file):
     """
     Replicates the R script's logic to process an MS-DIAL Area/Height file using pandas.
@@ -168,12 +172,12 @@ def process_area_file_python(uploaded_file):
         # Read the file without headers
         df = pd.read_csv(uploaded_file, sep='\t', header=None)
 
-        # 1. Identify and remove 'Average' and 'Stdev' columns based on row 3 (index 3)
+        # 1. Identify and remove 'Average' and 'Stdev' columns based on row 4 (index 3)
         cols_to_remove = df.iloc[3][df.iloc[3].isin(["Average", "Stdev"])].index
         df_modified = df.drop(columns=cols_to_remove)
 
         # 2. Remove the original header row (now at index 3)
-        df_modified = df_modified.drop(index=3)
+        df_modified = df_modified.drop(index=3).reset_index(drop=True)
 
         # 3. Define the new GNPS headers
         gnps_cols = ["Alignment ID", "Average Rt(min)", "Average Mz", "Metabolite name",
@@ -184,18 +188,18 @@ def process_area_file_python(uploaded_file):
                      "MS1 isotopic spectrum"]
 
         # 4. Remove other unnecessary columns by their integer position
-        # Note: R is 1-based, Python is 0-based. The indices are adjusted.
-        # Original R: -c(9:10,15:18,20:21,24:28)
-        # Corresponds to Python indices: 8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27
+        # R is 1-based, Python is 0-based. The indices are adjusted.
         cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
         df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
         
-        # 5. Assign the new headers to the correct row (now at index 3 after the drop)
+        # 5. Assign the new headers to the correct row (now at index 3)
         df_modified.iloc[3] = gnps_cols
 
         # 6. Remove features without an MS2 scan (where 'MS/MS included' is 'null')
-        # The 'MS/MS included' column is now at index 21
-        df_final = df_modified[df_modified[21] != "null"].copy()
+        # The 'MS/MS included' column is at index 21 before more drops, but it's safer to find it by name
+        # After column drops, the headers are now in row 3. Let's make them the actual headers.
+        df_modified.columns = df_modified.iloc[3]
+        df_final = df_modified[df_modified["MS/MS included"] != "null"].copy()
         
         # Convert the final DataFrame to a tab-separated string for download
         output_string = df_final.to_csv(sep='\t', header=False, index=False)
