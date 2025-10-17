@@ -2,34 +2,23 @@
 
 import streamlit as st
 import pandas as pd
-import subprocess
-import tempfile
-import os
-
-# Import the functions from your first script
-from mgf_processor import parse_mgf_to_dataframe, filter_dataframe, generate_output_files
-
-# --- PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Metabolomics Files Processor from MS-DIAL to GNPS1",
-    page_icon="🧪",
-    layout="centered",
-    menu_items={
-    'Report a bug': "mailto:f9.alan@gmail.com",
-    'About': "# This app was developed for those who are interested in processing their *MS-DIAL 5* output files to be suitable for *GNPS1*!"
-    }
+from mgf_processor import (
+    parse_mgf_to_dataframe, 
+    filter_dataframe, 
+    generate_output_files,
+    process_area_file_python  # <-- Import our new function
 )
 
-# --- HEADER AND LOGO ---
-st.title("Metabolomics Files Processor")
+st.set_page_config(
+    page_title="Metabolomics File Processor",
+    page_icon="🧪",
+    layout="centered"
+)
+
+st.title("Metabolomics File Processor")
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # Make sure 'logo_L125.png' is the correct name of your file.
     st.image("logo_L125.png")
-
-st.markdown("---")
-st.write("Lab 125, Chemistry Faculty, UNAM, MX")
-
 
 tab1, tab2 = st.tabs(["MGF Processor", "Area/Height File Formatter"])
 
