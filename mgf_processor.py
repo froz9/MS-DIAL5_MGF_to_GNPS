@@ -156,4 +156,51 @@ def generate_output_files(df_data):
     return {
         "MGF_FINAL_SIRIUS.mgf": sirius_content,
         "MGF_FINAL_GNPS.mgf": gnps_content
+
     }
+
+# --- NEW FUNCTION: ---
+def process_area_file_python(uploaded_file):
+    """
+    Replicates the R script's logic to process an MS-DIAL Area/Height file using pandas.
+    """
+    try:
+        # Read the file without headers
+        df = pd.read_csv(uploaded_file, sep='\t', header=None)
+
+        # 1. Identify and remove 'Average' and 'Stdev' columns based on row 3 (index 3)
+        cols_to_remove = df.iloc[3][df.iloc[3].isin(["Average", "Stdev"])].index
+        df_modified = df.drop(columns=cols_to_remove)
+
+        # 2. Remove the original header row (now at index 3)
+        df_modified = df_modified.drop(index=3)
+
+        # 3. Define the new GNPS headers
+        gnps_cols = ["Alignment ID", "Average Rt(min)", "Average Mz", "Metabolite name",
+                     "Adduct ion name", "Post curation result", "Fill %", "MS/MS included",
+                     "Formula", "Ontology", "INCHIKEY", "SMILES",
+                     "Comment", "Isotope tracking parent ID", "Isotope tracking weight number", "Dot product",
+                     "Reverse dot product", "Fragment presence %", "S/N average", "Spectrum reference file name",
+                     "MS1 isotopic spectrum"]
+
+        # 4. Remove other unnecessary columns by their integer position
+        # Note: R is 1-based, Python is 0-based. The indices are adjusted.
+        # Original R: -c(9:10,15:18,20:21,24:28)
+        # Corresponds to Python indices: 8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27
+        cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
+        df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
+        
+        # 5. Assign the new headers to the correct row (now at index 3 after the drop)
+        df_modified.iloc[3] = gnps_cols
+
+        # 6. Remove features without an MS2 scan (where 'MS/MS included' is 'null')
+        # The 'MS/MS included' column is now at index 21
+        df_final = df_modified[df_modified[21] != "null"].copy()
+        
+        # Convert the final DataFrame to a tab-separated string for download
+        output_string = df_final.to_csv(sep='\t', header=False, index=False)
+        return output_string
+
+    except Exception as e:
+        print(f"Error processing area file with Python: {e}")
+        return None
