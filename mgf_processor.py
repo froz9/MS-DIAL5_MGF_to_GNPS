@@ -161,25 +161,25 @@ def generate_output_files(df_data):
 
 # --- For process_area_file ---
 def process_area_file_python(uploaded_file):
-  
+    """
+    A direct and faithful translation of the R script's logic,
+    with robust filtering for the 'MS/MS included' column.
+    """
     try:
         df = pd.read_csv(uploaded_file, sep='\t', header=None)
 
-        # R Step 1 & 2: Remove columns based on 'Average' and 'Stdev' in the 4th row
+        # R Step 1 & 2: Remove columns based on 'Average' and 'Stdev'
         cols_to_remove_by_name = df.iloc[3][df.iloc[3].isin(["Average", "Stdev"])].index
         df_modified = df.drop(columns=cols_to_remove_by_name)
 
-        # R Step 3: Remove the 4th row (index 3)
+        # R Step 3: Remove the 4th row
         df_modified = df_modified.drop(index=3).reset_index(drop=True)
 
-        # R Step 4: Delete a specific list of columns by their integer position.
-        # This is the critical step that was incorrect before.
-        # R code: -c(9:10,15:18,20:21,24:28)
-        # Python indices (R_index - 1): 8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27
+        # R Step 4: Delete a specific list of columns by their integer position
         cols_to_drop_by_index = [8, 9, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27]
         df_modified = df_modified.drop(columns=df_modified.columns[cols_to_drop_by_index])
 
-        # R Step 5: Define and insert the new GNPS headers into the first 21 cells of the 4th row
+        # R Step 5: Define and insert the new GNPS headers
         gnps_cols = ["Alignment ID", "Average Rt(min)", "Average Mz", "Metabolite name",
                      "Adduct ion name", "Post curation result", "Fill %", "MS/MS included",
                      "Formula", "Ontology", "INCHIKEY", "SMILES",
@@ -187,14 +187,18 @@ def process_area_file_python(uploaded_file):
                      "Reverse dot product", "Fragment presence %", "S/N average", "Spectrum reference file name",
                      "MS1 isotopic spectrum"]
         
-        # The 4th row is now at index 3. We replace the first 21 columns' values.
         df_modified.iloc[3, 0:len(gnps_cols)] = gnps_cols
 
-        # R Step 6: Filter rows where the 'MS/MS included' column (column 22 in R, index 21 in Python) is "null"
-        # Since we deleted columns, we must find the 'MS/MS included' column by its new position.
-        # After the drops, the original 22nd column is now the 8th column (index 7).
-        # Let's find it dynamically for safety. The "MS/MS included" value is now in row 3, index 7.
-        df_final = df_modified[df_modified.iloc[:, 7] != "null"].copy()
+        # R Step 6: **THE FIX** - Filter rows where 'MS/MS included' is 'null' OR 'false'
+        # After the drops, the "MS/MS included" column is the 8th one (index 7).
+        
+        # Get the column as a Series and convert to lowercase strings
+        filter_column = df_modified.iloc[:, 7].astype(str).str.lower()
+        
+        # Create a boolean mask. We want to KEEP rows that are NOT in our list of bad values.
+        rows_to_keep = ~filter_column.isin(["null", "false"])
+        
+        df_final = df_modified[rows_to_keep].copy()
 
         # Convert the final DataFrame to a tab-separated string for download
         output_string = df_final.to_csv(sep='\t', header=False, index=False)
