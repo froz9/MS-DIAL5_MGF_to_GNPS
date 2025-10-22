@@ -46,19 +46,26 @@ def parse_mgf_to_dataframe(uploaded_file):
         for i, spec in enumerate(spectra):
             params = spec.get('params', {})
             
-            title_str = params.get('title', '')
+            # --- FIX: Create a new dict with all keys in lowercase ---
+            params_lower = {k.lower(): v for k, v in params.items()}
+            # ---------------------------------------------------------
+            
+            # Now, access everything from the new 'params_lower' dict
+            title_str = params_lower.get('title', '')
             match = re.search(r'ID=(\d+)\|', title_str)
             scan_id = int(match.group(1)) if match else i
             
-            pepmass_val = params.get('pepmass', [0])[0]
-            rt_min_val = params.get('RTINMINUTES', [0.0])[0]
+            pepmass_val = params_lower.get('pepmass', [0])[0]
+            
+            # --- THIS LINE NOW WORKS ---
+            rt_min_val = params_lower.get('rtinminutes', [0.0])[0] 
 
             row = {
                 'scans': scan_id,
                 'pepmass': float(pepmass_val),
-                'rt_in_minutes': float(rt_min_val),
-                'charge': params.get('charge'),
-                'ion': params.get('ion', ''),
+                'rt_in_minutes': float(rt_min_val), # This will now be 0.60414...
+                'charge': params_lower.get('charge'),
+                'ion': params_lower.get('ion', ''),
                 'm_z_array': spec.get('m/z array', np.array([])),
                 'intensity_array': spec.get('intensity array', np.array([])),
             }
