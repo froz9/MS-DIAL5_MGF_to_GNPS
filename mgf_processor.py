@@ -51,7 +51,7 @@ def parse_mgf_to_dataframe(uploaded_file):
             scan_id = int(match.group(1)) if match else i
             
             pepmass_val = params.get('pepmass', [0])[0]
-            rt_min_val = params.get('rtinminutes', [0.0])[0]
+            rt_min_val = params.get('RTINMINUTES', [0.0])[0]
 
             row = {
                 'scans': scan_id,
