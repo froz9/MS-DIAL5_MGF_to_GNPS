@@ -46,25 +46,37 @@ def parse_mgf_to_dataframe(uploaded_file):
         for i, spec in enumerate(spectra):
             params = spec.get('params', {})
             
-            # --- FIX: Create a new dict with all keys in lowercase ---
+            # --- 1. (STILL NEEDED) Convert all keys to lowercase ---
             params_lower = {k.lower(): v for k, v in params.items()}
-            # ---------------------------------------------------------
             
-            # Now, access everything from the new 'params_lower' dict
             title_str = params_lower.get('title', '')
             match = re.search(r'ID=(\d+)\|', title_str)
             scan_id = int(match.group(1)) if match else i
             
-            pepmass_val = params_lower.get('pepmass', [0])[0]
+            # --- 2. (FIXED) Handle PEPMASS ---
+            # Get the value as a string (defaulting to '0'), then convert the WHOLE string
+            pepmass_str = params_lower.get('pepmass', '0')
+            # Handle if it's a list (like ['100.1']) vs. a string ('100.1')
+            if isinstance(pepmass_str, list) and pepmass_str:
+                pepmass_str = pepmass_str[0]
             
-            # --- THIS LINE NOW WORKS ---
-            rt_min_val = params_lower.get('rtinminutes', [0.0])[0] 
+            # --- 3. (FIXED) Handle RTINMINUTES ---
+            # Get the value as a string (defaulting to '0.0'), then convert the WHOLE string
+            rt_str = params_lower.get('rtinminutes', '0.0')
+            if isinstance(rt_str, list) and rt_str:
+                rt_str = rt_str[0]
+
+            # --- 4. (FIXED) Handle CHARGE ---
+            # Charge is often a list (e.g., ['2+']), so we robustly get the first item
+            charge_val = params_lower.get('charge')
+            if isinstance(charge_val, list) and charge_val:
+                charge_val = charge_val[0] # Get first element if it's a list
 
             row = {
                 'scans': scan_id,
-                'pepmass': float(pepmass_val),
-                'rt_in_minutes': float(rt_min_val), # This will now be 0.60414...
-                'charge': params_lower.get('charge'),
+                'pepmass': float(pepmass_str),   # This is now correct
+                'rt_in_minutes': float(rt_str), # This is now correct
+                'charge': charge_val,           # This is now safer
                 'ion': params_lower.get('ion', ''),
                 'm_z_array': spec.get('m/z array', np.array([])),
                 'intensity_array': spec.get('intensity array', np.array([])),
